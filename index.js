@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const path = require('path');
 
 const authRoutes = require('./routes/auth');
+const cajerosRoutes = require('./routes/cajeros');
 const { verificarToken } = require('./middleware/auth');
 
 const app = express();
@@ -31,6 +32,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/cajeros', cajerosRoutes);
 
 // Manejo de errores
 app.use((err, req, res, next) => {

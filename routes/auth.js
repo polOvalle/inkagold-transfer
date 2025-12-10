@@ -4,7 +4,62 @@ const jwt = require('jsonwebtoken');
 const supabase = require('../config/supabase');
 const router = express.Router();
 
-// LOGIN - Solo usuario y contraseña
+// VALIDAR USUARIO + CAJERO
+router.post('/validate-user', async (req, res) => {
+  try {
+    const { usuario, cajero_id } = req.body;
+
+    if (!usuario || !cajero_id) {
+      return res.status(400).json({ error: 'Usuario y cajero requeridos' });
+    }
+
+    // Verificar que el usuario existe
+    const { data: usuarios, error: errorUsuario } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('usuario', usuario);
+
+    if (errorUsuario || !usuarios || usuarios.length === 0) {
+      return res.status(401).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = usuarios[0];
+
+    // Verificar que el cajero existe
+    const { data: cajeros, error: errorCajero } = await supabase
+      .from('cajeros')
+      .select('*, bases(nombre)')
+      .eq('id', cajero_id)
+      .eq('activo', true);
+
+    if (errorCajero || !cajeros || cajeros.length === 0) {
+      return res.status(401).json({ error: 'Cajero no encontrado' });
+    }
+
+    const cajero = cajeros[0];
+
+    // Si es trabajador, verificar que pertenece a la misma base que el cajero
+    if (user.rol === 'trabajador' && user.base_id !== cajero.base_id) {
+      return res.status(403).json({ error: 'Usuario no pertenece a esta base' });
+    }
+
+    res.json({
+      mensaje: 'Validación exitosa',
+      cajero: {
+        id: cajero.id,
+        nombre: cajero.nombre,
+        base_id: cajero.base_id,
+        base_nombre: cajero.bases?.nombre
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en validación:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+// LOGIN - Usuario, contraseña y cajero
 router.post('/login', async (req, res) => {
   try {
     const { usuario, password } = req.body;
