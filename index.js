@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const path = require('path');
 
 const authRoutes = require('./routes/auth');
 const { verificarToken } = require('./middleware/auth');
@@ -13,16 +14,20 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Rutas públicas
 app.get('/', (req, res) => {
-  res.json({
-    mensaje: 'Servidor de Transferencias Inkagold - v1.0',
-    status: 'funcionando',
-    endpoints: {
-      login: 'POST /api/auth/login',
-      registro: 'POST /api/auth/registro'
-    }
-  });
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 app.use('/api/auth', authRoutes);
