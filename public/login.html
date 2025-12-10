@@ -57,7 +57,7 @@
             font-size: 14px;
         }
 
-        input, select {
+        input {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -66,7 +66,7 @@
             transition: border-color 0.3s;
         }
 
-        input:focus, select:focus {
+        input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -153,25 +153,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        .stage-1, .stage-2 {
-            display: none;
-        }
-
-        .stage-1.active, .stage-2.active {
-            display: block;
-        }
-
-        .step-indicator {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 12px;
-            color: #999;
-        }
-
-        .step-indicator strong {
-            color: #667eea;
-        }
     </style>
 </head>
 <body>
@@ -184,80 +165,42 @@
         <div class="error" id="errorMsg"></div>
         <div class="success" id="successMsg"></div>
 
-        <!-- ETAPA 1: Usuario y Cajero -->
-        <div class="stage-1 active">
-            <div class="step-indicator">Paso 1 de 2: <strong>Validación</strong></div>
-
-            <form id="validationForm">
-                <div class="form-group">
-                    <label for="usuario">Usuario</label>
-                    <input
-                        type="text"
-                        id="usuario"
-                        name="usuario"
-                        placeholder="Ej: usuario_cusco"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="cajero">Cajero</label>
-                    <select id="cajero" name="cajero" required>
-                        <option value="">-- Selecciona un cajero --</option>
-                    </select>
-                </div>
-
-                <button type="submit" id="validateBtn">Validar</button>
-
-                <div class="loading" id="validationLoading">
-                    <div class="spinner"></div>
-                    <p>Verificando datos...</p>
-                </div>
-            </form>
-        </div>
-
-        <!-- ETAPA 2: Contraseña -->
-        <div class="stage-2">
-            <div class="step-indicator">Paso 2 de 2: <strong>Contraseña</strong></div>
-
-            <div id="userValidated" style="background: #f0f0f0; padding: 12px; border-radius: 5px; margin-bottom: 20px; font-size: 13px;">
-                <strong>Usuario validado:</strong> <span id="usuarioValidadoText"></span><br>
-                <strong>Cajero:</strong> <span id="cajeroValidadoText"></span>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="usuario">Usuario</label>
+                <input
+                    type="text"
+                    id="usuario"
+                    name="usuario"
+                    placeholder="Ej: usuario_cusco"
+                    required
+                >
             </div>
 
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="password">Contraseña</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Ingresa tu contraseña"
-                        required
-                    >
-                </div>
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Ingresa tu contraseña"
+                    required
+                >
+            </div>
 
-                <button type="submit" id="loginBtn">Entrar al Sistema</button>
+            <button type="submit" id="loginBtn">Entrar al Sistema</button>
 
-                <div class="loading" id="loginLoading">
-                    <div class="spinner"></div>
-                    <p>Verificando contraseña...</p>
-                </div>
-            </form>
-
-            <button
-                style="background: #999; margin-top: 10px;"
-                onclick="volverAtras()"
-            >
-                Volver Atrás
-            </button>
-        </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Verificando credenciales...</p>
+            </div>
+        </form>
 
         <div class="info">
             <strong>Usuarios de prueba:</strong><br>
-            <strong>Admin:</strong> admin<br>
-            <strong>Cusco:</strong> usuario_cusco<br>
-            <strong>Juliaca:</strong> usuario_juliaca
+            <strong>Admin:</strong> admin / 12345<br>
+            <strong>Cusco:</strong> usuario_cusco / cusco123<br>
+            <strong>Juliaca:</strong> usuario_juliaca / juliaca123
         </div>
     </div>
 
@@ -266,100 +209,29 @@
             ? 'http://localhost:3000'
             : 'https://inkagold-transfer-production.up.railway.app';
 
-        let usuarioValidado = null;
-        let cajerroValidado = null;
+        const form = document.getElementById('loginForm');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+        const loading = document.getElementById('loading');
+        const loginBtn = document.getElementById('loginBtn');
 
-        // Cargar cajeros al iniciar
-        window.addEventListener('DOMContentLoaded', () => {
-            cargarCajeros();
-        });
-
-        async function cargarCajeros() {
-            try {
-                const response = await fetch(`${API_URL}/api/cajeros`);
-                const data = await response.json();
-
-                if (response.ok) {
-                    const select = document.getElementById('cajero');
-                    select.innerHTML = '<option value="">-- Selecciona un cajero --</option>';
-
-                    data.cajeros.forEach(cajero => {
-                        const option = document.createElement('option');
-                        option.value = cajero.id;
-                        option.textContent = `${cajero.nombre} (${cajero.base_nombre})`;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error cargando cajeros:', error);
-                mostrarError('No se pudieron cargar los cajeros');
-            }
-        }
-
-        // ETAPA 1: Validación
-        document.getElementById('validationForm').addEventListener('submit', async (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const usuario = document.getElementById('usuario').value;
-            const cajerroId = document.getElementById('cajero').value;
-
-            if (!cajerroId) {
-                mostrarError('Debes seleccionar un cajero');
-                return;
-            }
-
-            limpiarMensajes();
-            document.getElementById('validationLoading').style.display = 'block';
-
-            try {
-                const response = await fetch(`${API_URL}/api/auth/validate-user`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, cajero_id: parseInt(cajerroId) })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    usuarioValidado = usuario;
-                    cajerroValidado = data.cajero;
-
-                    // Mostrar datos validados
-                    document.getElementById('usuarioValidadoText').textContent = usuario;
-                    document.getElementById('cajeroValidadoText').textContent = data.cajero.nombre;
-
-                    // Cambiar a etapa 2
-                    document.querySelector('.stage-1').classList.remove('active');
-                    document.querySelector('.stage-2').classList.add('active');
-                } else {
-                    mostrarError(data.error || 'Usuario o cajero no válido');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error de conexión. Intenta de nuevo.');
-            } finally {
-                document.getElementById('validationLoading').style.display = 'none';
-            }
-        });
-
-        // ETAPA 2: Login con contraseña
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
             const password = document.getElementById('password').value;
 
             limpiarMensajes();
-            document.getElementById('loginLoading').style.display = 'block';
+            loading.style.display = 'block';
+            loginBtn.disabled = true;
 
             try {
                 const response = await fetch(`${API_URL}/api/auth/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        usuario: usuarioValidado,
-                        password,
-                        cajero_id: cajerroValidado.id
-                    })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ usuario, password })
                 });
 
                 const data = await response.json();
@@ -367,43 +239,34 @@
                 if (response.ok) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('usuario', JSON.stringify(data.usuario));
-                    localStorage.setItem('cajero', JSON.stringify(cajerroValidado));
 
-                    document.getElementById('successMsg').textContent = `¡Bienvenido ${data.usuario.usuario}!`;
-                    document.getElementById('successMsg').style.display = 'block';
+                    successMsg.textContent = `¡Bienvenido ${data.usuario.usuario}!`;
+                    successMsg.style.display = 'block';
 
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1500);
+
                 } else {
-                    mostrarError(data.error || 'Contraseña incorrecta');
+                    mostrarError(data.error || 'Error en el login');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                mostrarError('Error de conexión. Intenta de nuevo.');
+                mostrarError('No se pudo conectar al servidor. Intenta de nuevo.');
             } finally {
-                document.getElementById('loginLoading').style.display = 'none';
+                loading.style.display = 'none';
+                loginBtn.disabled = false;
             }
         });
 
-        function volverAtras() {
-            limpiarMensajes();
-            document.querySelector('.stage-1').classList.add('active');
-            document.querySelector('.stage-2').classList.remove('active');
-            document.getElementById('password').value = '';
-            usuarioValidado = null;
-            cajerroValidado = null;
-        }
-
         function mostrarError(mensaje) {
-            const errorMsg = document.getElementById('errorMsg');
             errorMsg.textContent = mensaje;
             errorMsg.style.display = 'block';
         }
 
         function limpiarMensajes() {
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('successMsg').style.display = 'none';
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
         }
 
         // Limpiar errores al escribir
