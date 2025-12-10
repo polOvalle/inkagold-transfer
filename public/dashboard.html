@@ -252,6 +252,10 @@
     </div>
 
     <script>
+        const API_URL = window.location.origin.includes('localhost')
+            ? 'http://localhost:3000'
+            : window.location.origin;
+
         // Cargar información del usuario
         window.addEventListener('DOMContentLoaded', () => {
             const usuarioStr = localStorage.getItem('usuario');
