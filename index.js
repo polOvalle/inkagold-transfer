@@ -16,8 +16,8 @@ app.use(express.json());
 // Rutas públicas
 app.get('/', (req, res) => {
   res.json({
-    mensaje: 'Servidor de Transferencias Inkagold funcionando!',
-    version: '1.0.0',
+    mensaje: 'Servidor de Transferencias Inkagold - v1.0',
+    status: 'funcionando',
     endpoints: {
       login: 'POST /api/auth/login',
       registro: 'POST /api/auth/registro'
@@ -26,14 +26,6 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-
-// Ruta de prueba (requiere autenticación)
-app.get('/api/protegida', verificarToken, (req, res) => {
-  res.json({
-    mensaje: 'Acceso autorizado',
-    usuario: req.usuario
-  });
-});
 
 // Manejo de errores
 app.use((err, req, res, next) => {
@@ -44,6 +36,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en puerto ${PORT}`);
-  console.log(`📍 Accede a http://localhost:${PORT}`);
-  console.log(`🔌 Conectado a Supabase`);
+  console.log(`📍 http://localhost:${PORT}`);
 });
